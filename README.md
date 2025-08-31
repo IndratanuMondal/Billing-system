@@ -1,4 +1,4 @@
-# Billing-system
+# Supermarket Billing System
 
 The Billing System is a simple yet professional web application designed to help small businesses, shops, and individuals manage customer bills efficiently. This project provides an easy-to-use interface where users can input product details, calculate totals, and generate a final bill in a clean, professional format.
 
