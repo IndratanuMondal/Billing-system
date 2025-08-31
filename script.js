@@ -1,60 +1,99 @@
+
 let items = [];
 
-function addItems() {
-    let itemName = document.getElementById('item-name').value;
-    let itemPrice = document.getElementById('item-price').value;
-    let itemQuantity = document.getElementById('item-quantity').value;
+const CURRENCY = "₹";
 
-    if (itemName && itemQuantity && itemPrice) {
-        items.push({
-            name: itemName,
-            price: parseInt(itemPrice),
-            quantity: parseInt(itemQuantity)
-        });
+const form = document.getElementById("item-form");
+const nameInput = document.getElementById("item-name");
+const qtyInput = document.getElementById("item-quantity");
+const priceInput = document.getElementById("item-price");
+const tbody = document.getElementById("bill-body");
+const totalEl = document.getElementById("total-price");
+const clearBtn = document.getElementById("clear-items");
 
-        console.log(items);
-        showItems();
-        calculatingTotalPrice();
-        clearForm();
-    }
-}
+// Helpers
+const money = n => `${CURRENCY}${Number(n).toFixed(2)}`;
+const escapeHtml = (str) => {
+  const p = document.createElement("p");
+  p.appendChild(document.createTextNode(str));
+  return p.innerHTML;
+};
 
-function showItems() {
-    const tbody = document.querySelector('#billing-table tbody');
-    tbody.innerHTML = "";
+function render() {
+  tbody.innerHTML = "";
 
-    items.forEach(item => {
-        const tr = document.createElement('tr');
+  if (items.length === 0) {
+    const row = document.createElement("tr");
+    row.className = "text-muted";
+    row.innerHTML = `<td colspan="5" class="text-center">No items added yet.</td>`;
+    tbody.appendChild(row);
+    totalEl.textContent = `Billing Amount: ${money(0)}`;
+    return;
+  }
 
-        const nameTd = document.createElement('td');
-        nameTd.innerText = item.name;
+  let total = 0;
 
-        const quantityTd = document.createElement('td');
-        quantityTd.innerText = item.quantity;
+  items.forEach((item, idx) => {
+    const lineTotal = item.price * item.quantity;
+    total += lineTotal;
 
-        const priceTd = document.createElement('td');
-        priceTd.innerText = item.price.toFixed(2);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${escapeHtml(item.name)}</td>
+      <td class="text-right">${item.quantity}</td>
+      <td class="text-right">${money(item.price)}</td>
+      <td class="text-right font-weight-bold">${money(lineTotal)}</td>
+      <td class="text-right">
+        <button class="btn btn-sm btn-outline-danger" data-index="${idx}">Remove</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
 
-        tr.appendChild(nameTd);
-        tr.appendChild(quantityTd);
-        tr.appendChild(priceTd);
+  totalEl.textContent = `Billing Amount: ${money(total)}`;
 
-        tbody.appendChild(tr);
+  tbody.querySelectorAll("button[data-index]").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      const idx = Number(e.currentTarget.getAttribute("data-index"));
+      items.splice(idx, 1);
+      render();
     });
+  });
 }
 
-function calculatingTotalPrice() {
-    let totalPrice = 0;
-    items.forEach(item => {
-        totalPrice += item.price* item.quantity;
-    });
+form.addEventListener("submit", (e) => {
+  e.preventDefault();
 
-    console.log(totalPrice);
-    document.getElementById('total-price').innerText = `Billing Amount: $${totalPrice.toFixed(2)}.00`;
-}
+  const name = nameInput.value.trim();
+  const quantity = Number(qtyInput.value);
+  const price = Number(priceInput.value);
 
-function clearForm() {
-    document.getElementById('item-name').value = "";
-    document.getElementById('item-quantity').value = "";
-    document.getElementById('item-price').value = "";
-}
+  let valid = true;
+
+  if (!name) { nameInput.classList.add("is-invalid"); valid = false; }
+  else nameInput.classList.remove("is-invalid");
+
+  if (!Number.isFinite(quantity) || quantity < 1) {
+    qtyInput.classList.add("is-invalid"); valid = false;
+  } else qtyInput.classList.remove("is-invalid");
+
+  if (!Number.isFinite(price) || price < 0) {
+    priceInput.classList.add("is-invalid"); valid = false;
+  } else priceInput.classList.remove("is-invalid");
+
+  if (!valid) return;
+
+  items.push({ name, quantity, price });
+  render();
+
+  form.reset();
+  qtyInput.value = 1; 
+  nameInput.focus();
+});
+
+clearBtn.addEventListener("click", () => {
+  items = [];
+  render();
+});
+
+render();
